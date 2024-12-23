@@ -1,0 +1,93 @@
+import SwiftUI
+
+struct ContentView: View {
+    
+    @State private var filePath: String = ""
+    @State private var searchText: String = ""
+    @State private var replaceText: String = ""
+    @State private var newWord: String = ""
+    @State private var resultText: String = ""
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Configurações do Arquivo")) {
+                    TextField("Caminho do arquivo", text: $filePath)
+                        .padding()
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                
+                Section(header: Text("Buscar e Substituir")) {
+                    TextField("Palavra para buscar", text: $searchText)
+                        .padding()
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    TextField("Palavra a ser substituída", text: $replaceText)
+                        .padding()
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    TextField("Nova palavra", text: $newWord)
+                        .padding()
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                
+                Section {
+                    Button(action: {
+                        processFile()
+                    }) {
+                        Text("Processar")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+                }
+                
+                Section(header: Text("Resultado")) {
+                    Text(resultText)
+                        .padding()
+                        .foregroundColor(resultText.starts(with: "Erro") ? .red : .green)
+                }
+            }
+            .navigationTitle("Processar Arquivo")
+        }
+        .padding()
+    }
+    
+    func processFile() {
+        guard !filePath.isEmpty else {
+            resultText = "O caminho do arquivo não foi fornecido."
+            return
+        }
+        
+        guard FileManager.default.fileExists(atPath: filePath) else {
+            resultText = "O arquivo especificado não existe."
+            return
+        }
+        
+        do {
+            let content = try String(contentsOfFile: filePath, encoding: .utf8)
+            
+            if !searchText.isEmpty {
+                let occurrences = content.components(separatedBy: searchText).count - 1
+                resultText = "A palavra '\(searchText)' aparece \(occurrences) vezes."
+            }
+            
+            if !replaceText.isEmpty && !newWord.isEmpty {
+                let updatedContent = content.replacingOccurrences(of: replaceText, with: newWord)
+                try updatedContent.write(toFile: filePath, atomically: true, encoding: .utf8)
+                resultText = "Substituição completa. A palavra '\(replaceText)' foi substituída por '\(newWord)'."
+            }
+        } catch {
+            resultText = "Erro ao processar o arquivo. Erro: \(error.localizedDescription)"
+        }
+    }
+}
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
+}
